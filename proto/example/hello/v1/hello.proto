@@ -1,0 +1,126 @@
+syntax = "proto3";
+
+package example.hello.v1;
+
+import "buf/validate/validate.proto";
+
+message Hello { string hello = 1 [ (buf.validate.field).string.min_len = 1 ]; }
+
+message DisabledExample {
+  option (buf.validate.message).disabled = true;
+  // このバリデーションは無効化される
+  string val = 1 [ (buf.validate.field).string.min_len = 1 ];
+}
+
+message OneofExample {
+  oneof union {
+    option (buf.validate.oneof).required = true;
+    string val1 = 1;
+    string val2 = 2;
+  }
+}
+
+message StringValidationExample {
+  string const_value = 1 [ (buf.validate.field).string.const = "const" ];
+  string len_value = 2 [ (buf.validate.field).string.len = 5 ];
+  string min_len_value = 3 [ (buf.validate.field).string.min_len = 5 ];
+  string max_len_value = 4 [ (buf.validate.field).string.max_len = 5 ];
+  string len_bytes_value = 5 [ (buf.validate.field).string.len_bytes = 2 ];
+  string min_bytes_value = 6 [ (buf.validate.field).string.min_bytes = 2 ];
+  string max_bytes_value = 7 [ (buf.validate.field).string.max_bytes = 2 ];
+  string pattern_value = 8
+      [ (buf.validate.field).string.pattern = "^hello, .*$" ];
+  string prefix_value = 9 [ (buf.validate.field).string.prefix = "Hello" ];
+  // suffix_value = "Hello, World" OK
+  // suffix_value = "Hello, Japan" NG
+  string suffix_value = 10 [ (buf.validate.field).string.suffix = "World" ];
+  // contains_value = "apple, banana, orange" OK
+  // contains_value = "apple, orange" NG
+  string contains_value = 11
+      [ (buf.validate.field).string.contains = "banana" ];
+  // not_contains_value = "apple, banana, orange" NG
+  // not_contains_value = "apple, orange" OK
+  string not_contains_value = 12
+      [ (buf.validate.field).string.not_contains = "banana" ];
+  // in_value = "Go" OK
+  // in_value = "Rust" NG
+  string in_value = 13 [
+    (buf.validate.field).string.in = "Java",
+    (buf.validate.field).string.in = "Kotlin",
+    (buf.validate.field).string.in = "Go"
+  ];
+  // not_in_value = "Go" NG
+  // not_in_value = "Rust" OK
+  string not_in_value = 14 [
+    (buf.validate.field).string.not_in = "Java",
+    (buf.validate.field).string.not_in = "Kotlin",
+    (buf.validate.field).string.not_in = "Go"
+  ];
+  // protovalidate@example.com OK
+  // protovalidate.example.com NG
+  string email_value = 15 [ (buf.validate.field).string.email = true ];
+  // 127.0.0.1 NG
+  // https://example.com NG
+  // example.com OK
+  string hostname_value = 16 [ (buf.validate.field).string.hostname = true ];
+  // 127.0.0.1 OK
+  // ::192.0.2.33 OK
+  // 2001:0db8:85a3:0000:0000:8a2e:0370:7334 OK
+  // 255.255.255.256 NG
+  string ip_value = 17 [ (buf.validate.field).string.ip = true ];
+  // 127.0.0.1 OK
+  // 2001:0db8:85a3:0000:0000:8a2e:0370:7334 NG
+  string ipv4_value = 18 [ (buf.validate.field).string.ipv4 = true ];
+  // 127.0.0.1 NG
+  // 2001:0db8:85a3:0000:0000:8a2e:0370:7334 OK
+  string ipv6_value = 19 [ (buf.validate.field).string.ipv6 = true ];
+  // https://example.com OK
+  // example.com NG
+  string uri_value = 20 [ (buf.validate.field).string.uri = true ];
+  // ./example.com OK
+  string uri_ref_value = 21 [ (buf.validate.field).string.uri_ref = true ];
+  // 127.0.0.1 OK
+  // example.com OK
+  string address_value = 22 [ (buf.validate.field).string.address = true ];
+  // 550e8400-e29b-41d4-a716-446655440000 OK
+  string uuid_value = 23 [ (buf.validate.field).string.uuid = true ];
+  // 550e8400e29b41d4a716446655440000 OK
+  string tuuid_value = 24 [ (buf.validate.field).string.tuuid = true ];
+  // 255.255.255.0/24 OK
+  // 255.255.255.0 NG
+  string ip_with_preifxlen_value = 25
+      [ (buf.validate.field).string.ip_with_prefixlen = true ];
+  // 255.255.255.0/24 OK
+  // 255.255.255.0 NG
+  string ipv4_with_preifxlen_value = 26
+      [ (buf.validate.field).string.ipv4_with_prefixlen = true ];
+  // 2001:0db8:85a3:0000:0000:8a2e:0370:7334/24 OK
+  // 2001:0db8:85a3:0000:0000:8a2e:0370:7334 NG
+  string ipv6_with_preifxlen_value = 27
+      [ (buf.validate.field).string.ipv6_with_prefixlen = true ];
+  // 127.0.0.0/16 OK
+  // 127.0.0.1/16 NG
+  string ip_prefix_value = 28 [ (buf.validate.field).string.ip_prefix = true ];
+  // 127.0.0.0/16 OK
+  // 127.0.0.1/16 NG
+  string ip4_prefix_value = 29
+      [ (buf.validate.field).string.ipv4_prefix = true ];
+  // 2001:db8::/48 OK
+  // 2001:db8::1/48 NG
+  string ip6_prefix_value = 30
+      [ (buf.validate.field).string.ipv6_prefix = true ];
+  // 127.0.0.1:8080 OK
+  // 127.0.0.1 NG
+  // example.com:8080 OK
+  // example.com NG
+  // [::1]:1234 OK
+  string host_and_port_value = 31
+      [ (buf.validate.field).string.host_and_port = true ];
+  // KnownRegex enumを指定する
+  // KNOWN_REGEX_HTTP_HEADER_NAME HTTPヘッダー名
+  // KNOWN_REGEX_HTTP_HEADER_VALUE HTTPヘッダー値
+  string well_kown_regex_value = 32
+      [ (buf.validate.field).string.well_known_regex =
+            KNOWN_REGEX_HTTP_HEADER_VALUE ];
+  string strict_value = 33 [ (buf.validate.field).string.strict = false ];
+}

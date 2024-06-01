@@ -66,6 +66,8 @@ func main() {
 		IpPrefixValue:          "127.0.0.0/16",
 		Ip4PrefixValue:         "127.0.0.0/16",
 		Ip6PrefixValue:         "2001:db8::/48",
+		HostAndPortValue:       "127.0.0.1:3000",
+		WellKownRegexValue:     "Contetnt Type",
 	}); err != nil {
 		errorList = append(errorList, err)
 	}

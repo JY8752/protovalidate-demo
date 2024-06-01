@@ -119,8 +119,12 @@ message StringValidationExample {
   // KnownRegex enumを指定する
   // KNOWN_REGEX_HTTP_HEADER_NAME HTTPヘッダー名
   // KNOWN_REGEX_HTTP_HEADER_VALUE HTTPヘッダー値
-  string well_kown_regex_value = 32
-      [ (buf.validate.field).string.well_known_regex =
-            KNOWN_REGEX_HTTP_HEADER_VALUE ];
-  string strict_value = 33 [ (buf.validate.field).string.strict = false ];
+  //
+  // Content-Type OK
+  // Content Type OK (strict = fasle)
+  // Content Type NG (strict = true)
+  string well_kown_regex_value = 32 [
+    (buf.validate.field).string.well_known_regex = KNOWN_REGEX_HTTP_HEADER_NAME,
+    (buf.validate.field).string.strict = true
+  ];
 }

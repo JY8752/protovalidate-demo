@@ -3,9 +3,14 @@ package main
 import (
 	"fmt"
 	hellov1 "protovalidate-demo/gen/example/hello/v1"
+	"time"
 
 	"github.com/bufbuild/protovalidate-go"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 func validate(v *protovalidate.Validator, msg protoreflect.ProtoMessage) error {
@@ -67,7 +72,126 @@ func main() {
 		Ip4PrefixValue:         "127.0.0.0/16",
 		Ip6PrefixValue:         "2001:db8::/48",
 		HostAndPortValue:       "127.0.0.1:3000",
-		WellKownRegexValue:     "Contetnt Type",
+		WellKownRegexValue:     "Contetnt-Type",
+	}); err != nil {
+		errorList = append(errorList, err)
+	}
+
+	if err = validate(v, &hellov1.BoolValidationExample{
+		TrueValue:  true,
+		FalseValue: false,
+	}); err != nil {
+		errorList = append(errorList, err)
+	}
+
+	if err = validate(v, &hellov1.BytesValidationExample{
+		ConstValue:    []byte{1, 2, 3, 4},
+		LenValue:      []byte{1, 2, 3, 4},
+		MinLenValue:   []byte{1, 2, 3},
+		MaxLenValue:   []byte{1, 2},
+		PatternValue:  []byte{'\x61'},
+		PrefixValue:   []byte{'\x01', '\x02', '\x03'},
+		SuffixValue:   []byte{'\x01', '\x02', '\x03'},
+		ContainsValue: []byte{'\x01', '\x02', '\x03'},
+		InValue:       []byte{'\x02', '\x03'},
+		NotInValue:    []byte{'\x01', '\x02', '\x03'},
+		IpValue:       []byte{'\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\xFF', '\xFF', '\xFF', '\xFF', '\xFF', '\x00'},
+		Ipv4Value:     []byte{'\xFF', '\xFF', '\xFF', '\x00'},
+		Ipv6Value:     []byte{'\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\x00', '\xFF', '\xFF', '\xFF', '\xFF', '\xFF', '\x00'},
+	}); err != nil {
+		errorList = append(errorList, err)
+	}
+
+	if err = validate(v, &hellov1.DoubleValidationExample{
+		ConstValue:  42.0,
+		LtValue:     9.0,
+		LteValue:    10.0,
+		GtValue:     11.0,
+		GteValue:    10.0,
+		InValue:     11.0,
+		NotInValue:  13.0,
+		FiniteValue: 1.0,
+	}); err != nil {
+		errorList = append(errorList, err)
+	}
+
+	if err = validate(v, &hellov1.EnumValidationExample{
+		ConstValue:       hellov1.EnumValidationExample_MY_ENUM_VALUE1,
+		DefinedOnlyValue: hellov1.EnumValidationExample_MY_ENUM_VALUE1,
+		InValue:          hellov1.EnumValidationExample_MY_ENUM_VALUE1,
+		NotInValue:       hellov1.EnumValidationExample_MY_ENUM_VALUE3,
+	}); err != nil {
+		errorList = append(errorList, err)
+	}
+
+	if err = validate(v, &hellov1.MapValidationExample{
+		MinPairsValue: map[string]string{"key1": "value1", "key2": "value2"},
+		MaxPairsValue: map[string]string{"key1": "value1", "key2": "value2"},
+		KeysValue:     map[string]string{"key1": "value1"},
+		ValuesValue:   map[string]string{"key1": "value1"},
+	}); err != nil {
+		errorList = append(errorList, err)
+	}
+
+	if err = validate(v, &hellov1.RepeatedValidationExample{
+		MinItemsValue: []string{"elm1", "elm2"},
+		MaxItemsValue: []string{"elm1", "elm2"},
+		UniqueValue:   []string{"elm1", "elm2", "elm3"},
+		ItemsValue:    []string{"abcdefghi"},
+	}); err != nil {
+		errorList = append(errorList, err)
+	}
+
+	intVal, err := anypb.New(wrapperspb.Int32(123))
+	if err != nil {
+		panic(err)
+	}
+
+	boolVal, err := anypb.New(wrapperspb.Bool(true))
+	if err != nil {
+		panic(err)
+	}
+
+	if err = validate(v, &hellov1.AnyValidationExample{
+		InValue:    intVal,
+		NotInValue: boolVal,
+	}); err != nil {
+		errorList = append(errorList, err)
+	}
+
+	if err = validate(v, &hellov1.DurationValidationExample{
+		ConstValue: durationpb.New(5 * time.Second),
+		LtValue:    durationpb.New(4 * time.Second),
+		LteValue:   durationpb.New(5 * time.Second),
+		GtValue:    durationpb.New(6 * time.Second),
+		GteValue:   durationpb.New(5 * time.Second),
+		InValue:    durationpb.New(5 * time.Second),
+		NotInValue: durationpb.New(8 * time.Second),
+	}); err != nil {
+		errorList = append(errorList, err)
+	}
+
+	if err = validate(v, &hellov1.TimestampValidationExample{
+		ConstValue:  timestamppb.New(time.Date(2024, 6, 3, 12, 0, 0, 0, time.UTC)),
+		LtValue:     timestamppb.New(time.Date(2024, 6, 3, 11, 0, 0, 0, time.UTC)),
+		LteValue:    timestamppb.New(time.Date(2024, 6, 3, 12, 0, 0, 0, time.UTC)),
+		LtNowValue:  timestamppb.New(time.Now().UTC()),
+		GtValue:     timestamppb.New(time.Date(2024, 6, 3, 13, 0, 0, 0, time.UTC)),
+		GteValue:    timestamppb.New(time.Date(2024, 6, 3, 12, 0, 0, 0, time.UTC)),
+		GtNowValue:  timestamppb.New(time.Now().UTC().Add(time.Hour)),
+		WithinValue: timestamppb.New(time.Now().UTC()),
+	}); err != nil {
+		errorList = append(errorList, err)
+	}
+
+	if err = validate(v, &hellov1.FieldConstraintsExample{
+		EvenValue:             2,
+		RequiredMessageValue:  &hellov1.FieldConstraintsExample_MyValue{},
+		RequiredStringValue:   "a",
+		RequiredInt32Value:    1,
+		RequiredEnumValue:     hellov1.FieldConstraintsExample_STATUS_OK,
+		RequiredRepeatedValue: []string{"a"},
+		RequiredMapValue:      map[string]string{"a": "a"},
 	}); err != nil {
 		errorList = append(errorList, err)
 	}

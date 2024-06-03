@@ -3,6 +3,9 @@ syntax = "proto3";
 package example.hello.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/any.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
 
 message Hello { string hello = 1 [ (buf.validate.field).string.min_len = 1 ]; }
 
@@ -126,5 +129,281 @@ message StringValidationExample {
   string well_kown_regex_value = 32 [
     (buf.validate.field).string.well_known_regex = KNOWN_REGEX_HTTP_HEADER_NAME,
     (buf.validate.field).string.strict = true
+  ];
+}
+
+message BoolValidationExample {
+  bool true_value = 1 [ (buf.validate.field).bool.const = true ];
+  bool false_value = 2 [ (buf.validate.field).bool.const = false ];
+}
+
+message BytesValidationExample {
+  // 1234 OK
+  // 123 NG
+  bytes const_value = 1
+      [ (buf.validate.field).bytes.const = "\x01\x02\x03\x04" ];
+  // 1234 OK
+  // 123 NG
+  bytes len_value = 2 [ (buf.validate.field).bytes.len = 4 ];
+  // 123 OK
+  // 1 NG
+  bytes min_len_value = 3 [ (buf.validate.field).bytes.min_len = 2 ];
+  // 12 OK
+  // 123 NG
+  bytes max_len_value = 4 [ (buf.validate.field).bytes.max_len = 2 ];
+  // 0x61 (a) OK
+  // 0xe3, 0x81, 0x82 (あ) NG
+  bytes pattern_value = 5
+      [ (buf.validate.field).bytes.pattern = "^[a-zA-Z0-9]+$" ];
+  // 0x01, 0x02, 0x03 OK
+  // 0x01, 0x03, 0x02NG
+  bytes prefix_value = 6 [ (buf.validate.field).bytes.prefix = "\x01\x02" ];
+  // 0x01, 0x02, 0x03 OK
+  // 0x02, 0x01, 0x03 NG
+  bytes suffix_value = 7 [ (buf.validate.field).bytes.suffix = "\x02\x03" ];
+  // 0x01, 0x02, 0x03 OK
+  // 0x01, 0x03 NG
+  bytes contains_value = 8 [ (buf.validate.field).bytes.contains = "\x02" ];
+  // 0x02, 0x03 OK
+  // 0x01, 0x02, 0x03 NG
+  bytes in_value = 9 [
+    (buf.validate.field).bytes.in = "\x01\x02",
+    (buf.validate.field).bytes.in = "\x02\x03",
+    (buf.validate.field).bytes.in = "\x03\x04"
+  ];
+  // 0x02, 0x03 NG
+  // 0x01, 0x02, 0x03 OK
+  bytes not_in_value = 10 [
+    (buf.validate.field).bytes.not_in = "\x01\x02",
+    (buf.validate.field).bytes.not_in = "\x02\x03",
+    (buf.validate.field).bytes.not_in = "\x03\x04"
+  ];
+  // 0xFF, 0xFF, 0xFF, 0x00 (255.255.255.0) OK
+  // \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+  // \xff\xff\xff\xff\xff\x00   (::ffff:ffff:ff00) OK
+  // \x01\x02 NG
+  bytes ip_value = 11 [ (buf.validate.field).bytes.ip = true ];
+  // 0xFF, 0xFF, 0xFF, 0x00 (255.255.255.0) OK
+  // \x01\x02 NG
+  bytes ipv4_value = 12 [ (buf.validate.field).bytes.ipv4 = true ];
+  // \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00
+  // \xff\xff\xff\xff\xff\x00   (::ffff:ffff:ff00) OK
+  // \x01\x02 NG
+  bytes ipv6_value = 13 [ (buf.validate.field).bytes.ipv6 = true ];
+}
+
+message DoubleValidationExample {
+  // 42.0 OK
+  // 10.0 NG
+  double const_value = 1 [ (buf.validate.field).double.const = 42.0 ];
+  // 9.0 OK
+  // 10.0 NG
+  double lt_value = 2 [ (buf.validate.field).double.lt = 10.0 ];
+  // 10.0 OK
+  // 11.0 NG
+  double lte_value = 3 [ (buf.validate.field).double.lte = 10.0 ];
+  // 11.0 OK
+  // 10.0 NG
+  double gt_value = 4 [ (buf.validate.field).double.gt = 10.0 ];
+  // 10.0 OK
+  // 9.0 NG
+  double gte_value = 5 [ (buf.validate.field).double.gte = 10.0 ];
+  // 11.0 OK
+  // 13.0 NG
+  double in_value = 6 [
+    (buf.validate.field).double.in = 10.0,
+    (buf.validate.field).double.in = 11.0,
+    (buf.validate.field).double.in = 12.0
+  ];
+  // 11.0 NG
+  // 13.0 OK
+  double not_in_value = 7 [
+    (buf.validate.field).double.not_in = 10.0,
+    (buf.validate.field).double.not_in = 11.0,
+    (buf.validate.field).double.not_in = 12.0
+  ];
+  // infinite or NaN NG double only
+  double finite_value = 8 [ (buf.validate.field).double.finite = true ];
+}
+
+message EnumValidationExample {
+  enum MyEnum {
+    MY_ENUM_UNSPECIFIED = 0;
+    MY_ENUM_VALUE1 = 1;
+    MY_ENUM_VALUE2 = 2;
+    MY_ENUM_VALUE3 = 3;
+  }
+  // MY_ENUM_VALUE1 OK
+  // MY_ENUM_VALUE2 NG
+  MyEnum const_value = 1 [ (buf.validate.field).enum.const = 1 ];
+  // Undefined Value 4 NG
+  MyEnum defined_only_value = 2
+      [ (buf.validate.field).enum.defined_only = true ];
+  // MY_ENUM_VALUE1 OK
+  // MY_ENUM_VALUE3 NG
+  MyEnum in_value = 3
+      [ (buf.validate.field).enum.in = 1, (buf.validate.field).enum.in = 2 ];
+  // MY_ENUM_VALUE1 NG
+  // MY_ENUM_VALUE3 OK
+  MyEnum not_in_value = 4 [
+    (buf.validate.field).enum.not_in = 1,
+    (buf.validate.field).enum.not_in = 2
+  ];
+}
+
+message MapValidationExample {
+  // {"key1": "value1", "key2": "value2"} OK
+  // {"key1": "value1"} NG
+  map<string, string> min_pairs_value = 1
+      [ (buf.validate.field).map.min_pairs = 2 ];
+  // {"key1": "value1", "key2": "value2"} OK
+  // {"key1": "value1", "key2": "value2", "key3": "value3"} NG
+  map<string, string> max_pairs_value = 2
+      [ (buf.validate.field).map.max_pairs = 2 ];
+  // {"a": "value1"} NG
+  // {"abcdefghijk": "value1"} NG
+  // {"key1": "value1"} OK
+  map<string, string> keys_value = 3
+      [ (buf.validate.field).map.keys = {string : {min_len : 3 max_len : 10}} ];
+  // {"key1": "a"} NG
+  // {"key1": "abcdefghijk"} NG
+  // {"key1": "value1"} OK
+  map<string, string> values_value = 4 [
+    (buf.validate.field).map.values = {string : {min_len : 3 max_len : 10}}
+  ];
+}
+
+message RepeatedValidationExample {
+  // ["elm1", "elm2"] OK
+  // ["elm1"] NG
+  repeated string min_items_value = 1
+      [ (buf.validate.field).repeated .min_items = 2 ];
+  // ["elm1", "elm2"] OK
+  // ["elm1", "el2", "el3"] NG
+  repeated string max_items_value = 2
+      [ (buf.validate.field).repeated .max_items = 2 ];
+  // ["elm1", "elm2"] OK
+  // ["elm1", "elm2", "elm2"] NG
+  repeated string unique_value = 3
+      [ (buf.validate.field).repeated .unique = true ];
+  // ["a"] NG
+  // ["abcdefghijk"] NG
+  repeated string items_value = 4 [
+    (buf.validate.field).repeated .items = {string : {min_len : 3 max_len : 10}}
+  ];
+}
+
+message AnyValidationExample {
+  // google.protobuf.Int32Value OK
+  // google.protobuf.BoolValue NG
+  google.protobuf.Any in_value = 1 [
+    (buf.validate.field).any.in =
+        "type.googleapis.com/google.protobuf.Int32Value",
+    (buf.validate.field).any.in =
+        "type.googleapis.com/google.protobuf.StringValue"
+  ];
+  // google.protobuf.Int32Value NG
+  // google.protobuf.BoolValue OK
+  google.protobuf.Any not_in_value = 2 [
+    (buf.validate.field).any.not_in =
+        "type.googleapis.com/google.protobuf.Int32Value",
+    (buf.validate.field).any.not_in =
+        "type.googleapis.com/google.protobuf.StringValue"
+  ];
+}
+
+message DurationValidationExample {
+  // <Go> durationpb.New(5 * time.Second) OK
+  google.protobuf.Duration const_value = 1
+      [ (buf.validate.field).duration.const = {seconds : 5} ];
+  // <Go> durationpb.New(4 * time.Second) OK
+  google.protobuf.Duration lt_value = 2
+      [ (buf.validate.field).duration.lt = {seconds : 5} ];
+  // <Go> durationpb.New(5 * time.Second) OK
+  google.protobuf.Duration lte_value = 3
+      [ (buf.validate.field).duration.lte = {seconds : 5} ];
+  // <Go> durationpb.New(6 * time.Second) OK
+  google.protobuf.Duration gt_value = 4
+      [ (buf.validate.field).duration.gt = {seconds : 5} ];
+  // <Go> durationpb.New(5 * time.Second) OK
+  google.protobuf.Duration gte_value = 5
+      [ (buf.validate.field).duration.gte = {seconds : 5} ];
+  // <Go> durationpb.New(5 * time.Second) OK
+  google.protobuf.Duration in_value = 6 [
+    (buf.validate.field).duration.in = {seconds : 5},
+    (buf.validate.field).duration.in = {seconds : 6},
+    (buf.validate.field).duration.in = {seconds : 7}
+  ];
+  // <Go> durationpb.New(8 * time.Second) OK
+  google.protobuf.Duration not_in_value = 7 [
+    (buf.validate.field).duration.not_in = {seconds : 5},
+    (buf.validate.field).duration.not_in = {seconds : 6},
+    (buf.validate.field).duration.not_in = {seconds : 7}
+  ];
+}
+
+message TimestampValidationExample {
+  // 　date -u -j -f "%Y-%m-%d %H:%M:%S" "2024-06-03 12:00:00" +%s
+  google.protobuf.Timestamp const_value = 1
+      [ (buf.validate.field).timestamp.const = {seconds : 1717416000} ];
+  // date -j -f "%Y-%m-%d %H:%M:%S" "2024-06-03 11:00:00" +%s
+  // > 1717412400 OK
+  google.protobuf.Timestamp lt_value = 2
+      [ (buf.validate.field).timestamp.lt = {seconds : 1717416000} ];
+  // date -j -f "%Y-%m-%d %H:%M:%S" "2024-06-03 12:00:00" +%s
+  // > 1717416000 OK
+  google.protobuf.Timestamp lte_value = 3
+      [ (buf.validate.field).timestamp.lte = {seconds : 1717416000} ];
+  google.protobuf.Timestamp lt_now_value = 4
+      [ (buf.validate.field).timestamp.lt_now = true ];
+  // date -j -f "%Y-%m-%d %H:%M:%S" "2024-06-03 13:00:00" +%s
+  // > 1717419600 OK
+  google.protobuf.Timestamp gt_value = 5
+      [ (buf.validate.field).timestamp.gt = {seconds : 1717416000} ];
+  // date -j -f "%Y-%m-%d %H:%M:%S" "2024-06-03 12:00:00" +%s
+  // > 1717416000 OK
+  google.protobuf.Timestamp gte_value = 6
+      [ (buf.validate.field).timestamp.gte = {seconds : 1717416000} ];
+  google.protobuf.Timestamp gt_now_value = 7
+      [ (buf.validate.field).timestamp.gt_now = true ];
+  // バリデーション時の現在時刻から前後1時間以内の時刻であること
+  google.protobuf.Timestamp within_value = 8
+      [ (buf.validate.field).timestamp.within = {seconds : 3600} ];
+}
+
+message FieldConstraintsExample {
+  // 2 OK
+  // 3 NG
+  int32 even_value = 1 [ (buf.validate.field).cel = {
+    id : "int32.even",
+    message : "value must be even number",
+    expression : "this % 2 == 0",
+  } ];
+
+  message MyValue { int32 value = 1; }
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_OK = 1;
+  }
+
+  // 値の指定がないとerror
+  MyValue required_message_value = 2 [ (buf.validate.field).required = true ];
+  // デフォルト値(空文字)だとエラー
+  string required_string_value = 3 [ (buf.validate.field).required = true ];
+  // デフォルト値(0)だとエラー
+  int32 required_int32_value = 4 [ (buf.validate.field).required = true ];
+  // 0がだめなのでenumの場合、未定義がエラーになる
+  Status required_enum_value = 5 [ (buf.validate.field).required = true ];
+  // 要素が0のときエラー
+  repeated string required_repeated_value = 6
+      [ (buf.validate.field).required = true ];
+  // 要素が0のときエラー
+  map<string, string> required_map_value = 7
+      [ (buf.validate.field).required = true ];
+
+  // 値が指定されていない時にはemail制約を無視する
+  string ignore_value = 8 [
+    (buf.validate.field).string.email = true,
+    (buf.validate.field).ignore = IGNORE_IF_UNPOPULATED
   ];
 }
